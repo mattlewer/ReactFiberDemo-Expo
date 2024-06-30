@@ -1,37 +1,47 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { Suspense, useMemo } from "react";
+import { Canvas, useLoader } from "@react-three/fiber/native";
+import { useGLTF } from "@react-three/drei/native";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
+import { Asset } from "expo-asset";
+import * as THREE from "three";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+function A() {
+  const buffer = useLoader(THREE.FileLoader, require("../assets/tree_obj.obj"));
+  const obj = useMemo(
+    () => new OBJLoader().parse(THREE.LoaderUtils.decodeText(buffer)),
+    [buffer]
+  );
+  return <primitive object={obj} scale={1} />;
+}
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+function B() {
+  const buffer = useLoader(
+    THREE.FileLoader,
+    Asset.fromModule(require("../assets/tree_obj.obj")).uri
+  );
+  const obj = useMemo(
+    () => new OBJLoader().parse(THREE.LoaderUtils.decodeText(buffer)),
+    [buffer]
+  );
+  return <primitive object={obj} scale={1} />;
+}
+
+function C(props) {
+  const gltf = useGLTF(require("../assets/tree_gltf.gltf"));
+  return <primitive {...props} object={gltf.scene} />;
+}
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-    </ThemeProvider>
+    <Canvas style={{ flex: 1 }}>
+      <ambientLight />
+      <directionalLight />
+      <pointLight position={[10, 10, 10]} intensity={2000} />
+      <Suspense>
+        <A/>
+        {/* <B /> */}
+        {/* <C/> */}
+      </Suspense>
+    </Canvas>
   );
 }
